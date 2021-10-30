@@ -1,0 +1,137 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { setupDataPipeline, teardownDataPipeline } from '$lib/serial';
+	import { toast } from '@zerodevx/svelte-toast';
+	import { fakeSerialStream } from '$lib/mock/serial';
+
+	const serialAvailable: boolean = 'serial' in navigator;
+
+	enum State {
+		NotConnected,
+		Loading,
+		Connected
+	}
+
+	// state
+	let state: State = State.NotConnected;
+	let source: string = '';
+	let dropDownVisable = false;
+
+	// bindings
+	let component: HTMLDivElement;
+
+	onMount(() => {
+		const handleClickOutside = (e) => {
+			if (dropDownVisable && !component.contains(e.target)) {
+				dropDownVisable = false;
+			}
+		};
+		window.addEventListener('click', handleClickOutside, false);
+		return () => {
+			window.removeEventListener('click', handleClickOutside, false);
+		};
+	});
+
+	function toggleDropDown() {
+		dropDownVisable = !dropDownVisable;
+	}
+
+	async function handleSerialConnect() {
+		dropDownVisable = false;
+		if (serialAvailable) {
+			try {
+				state = State.Loading;
+				// @ts-ignore
+				const port = await navigator.serial.requestPort();
+				await port.open({ baudRate: 9600 });
+
+				source = 'Serial Port';
+				console.info(port);
+				state = State.Connected;
+
+				// Try to hook this up with stuff
+				await setupDataPipeline(port.readable);
+			} catch (error) {
+				state = State.NotConnected;
+				// create a toast that shows on the screen
+				toast.push('Failed to connect. Please see console');
+				console.warn(error);
+			}
+		}
+	}
+
+	function handleFileConnect() {
+		dropDownVisable = false;
+		// TODO: implement the file api
+	}
+
+	async function handleFakeConnect() {
+		dropDownVisable = false;
+		source = 'Fake Serial Port';
+		state = State.Connected;
+		await setupDataPipeline(fakeSerialStream);
+	}
+
+	function handleDisconnect() {
+		// TODO: implement
+		state = State.NotConnected;
+		source = '';
+		teardownDataPipeline();
+	}
+</script>
+
+<div bind:this={component} class="ml-auto text-white relative">
+	<button
+		on:click={toggleDropDown}
+		class="py-2 px-3 rounded shadow bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
+		class:bg-blue-600={state == State.NotConnected}
+		class:bg-yellow-600={state == State.Loading}
+		class:bg-green-600={state == State.Connected}
+	>
+		{#if state == State.NotConnected}
+			Connect
+			<svg
+				class="h-5 w-5 inline-block"
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+		{:else if state == State.Loading}
+			Loading <div
+				style="border-right-color:transparent"
+				class="inline-block h-4 w-4 border-2 rounded-full animate-spin"
+			/>
+		{:else if state == State.Connected}
+			{source}
+			<svg
+				class="h-5 w-5 inline-block"
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+		{/if}
+	</button>
+	{#if dropDownVisable}
+		<div class="flex flex-col bg-blue-600 shadow-xl rounded mt-1 right-0 absolute">
+			{#if state == State.NotConnected}
+				<button on:click={handleSerialConnect} class="hover:bg-blue-700 px-6 py-1">Serial</button>
+				<button on:click={handleFileConnect} class="hover:bg-blue-700 px-6 py-1">File</button>
+				<button on:click={handleFakeConnect} class="hover:bg-blue-700 px-6 py-1">Fake Data</button>
+			{:else if state == State.Connected}
+				<button on:click={handleDisconnect} class="hover:bg-blue-700 px-6 py-1">Disconnect</button>
+			{/if}
+		</div>
+	{/if}
+</div>

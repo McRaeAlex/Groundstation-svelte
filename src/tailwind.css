@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		color: rgb(65, 84, 98);
+	}
+}
+
+.chart {
+	@apply rounded p-2 overflow-hidden;
+	height: 30vh;
+	box-shadow: 0 0.125rem 1rem rgba(27, 40, 50, 0.04), 0 0.125rem 2rem rgba(27, 40, 50, 0.08),
+		0 0 0 0.0625rem rgba(27, 40, 50, 0.024);
+}

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { setupDataPipeline, teardownDataPipeline } from '$lib/serial';
+	import { setupDataPipeline } from '$lib/serial';
 	import { toast } from '@zerodevx/svelte-toast';
-	import { fakeSerialStream } from '$lib/mock/serial';
+	import { createFakeSerialStream } from '$lib/mock/serial';
 
 	const serialAvailable: boolean = 'serial' in navigator;
 
@@ -19,6 +19,7 @@
 
 	// bindings
 	let component: HTMLDivElement;
+	let disconnectAction: () => Promise<void>;
 
 	onMount(() => {
 		const handleClickOutside = (e) => {
@@ -36,47 +37,52 @@
 		dropDownVisable = !dropDownVisable;
 	}
 
-	async function handleSerialConnect() {
-		dropDownVisable = false;
-		if (serialAvailable) {
-			try {
-				state = State.Loading;
-				// @ts-ignore
-				const port = await navigator.serial.requestPort();
-				await port.open({ baudRate: 9600 });
-
-				source = 'Serial Port';
-				console.info(port);
-				state = State.Connected;
-
-				// Try to hook this up with stuff
-				await setupDataPipeline(port.readable);
-			} catch (error) {
-				state = State.NotConnected;
-				// create a toast that shows on the screen
-				toast.push('Failed to connect. Please see console');
-				console.warn(error);
-			}
+	async function disconnectCurrentDevice() {
+		if (disconnectAction) {
+			await disconnectAction();
+			disconnectAction = undefined;
 		}
 	}
 
-	function handleFileConnect() {
+	async function handleConnect(readStream: ReadableStream<Uint8Array>, name: string) {
+		await disconnectCurrentDevice();
 		dropDownVisable = false;
+		try {
+			state = State.Loading;
+
+			disconnectAction = setupDataPipeline(readStream);
+			source = name;
+			state = State.Connected;
+			toast.push('Connected!')
+		} catch (error) {
+			state = State.NotConnected;
+			disconnectCurrentDevice();
+			toast.push('Failed to connect. Please see console');
+		}
+	}
+
+	async function handleSerialConnect() {
+		state = State.Loading;
+		// @ts-ignore
+		const port = await navigator.serial.requestPort();
+		await port.open({ baudRate: 9600 });
+
+		handleConnect(port.readable, 'Serial');
+	}
+
+	async function handleFileConnect() {
 		// TODO: implement the file api
+		await handleConnect(null, '');
 	}
 
 	async function handleFakeConnect() {
-		dropDownVisable = false;
-		source = 'Fake Serial Port';
-		state = State.Connected;
-		await setupDataPipeline(fakeSerialStream);
+		await handleConnect(createFakeSerialStream(), 'Fake Serial Port');
 	}
 
-	function handleDisconnect() {
-		// TODO: implement
+	async function handleDisconnect() {
+		await disconnectCurrentDevice();
 		state = State.NotConnected;
 		source = '';
-		teardownDataPipeline();
 	}
 </script>
 

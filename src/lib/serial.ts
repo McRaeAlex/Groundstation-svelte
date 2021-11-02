@@ -2,23 +2,32 @@ import { Subject } from 'rxjs';
 
 export const packetProducer = new Subject<DataPacket>();
 
-let gStream: ReadableStream | null = null;
+// packetProducer.subscribe({ next: (value) => console.info(value) });
 
-packetProducer.subscribe({ next: (value) => console.info(value) });
-
-export async function setupDataPipeline(stream: ReadableStream<Uint8Array>): Promise<void> {
-	gStream = stream;
-	const reader = stream
+/**
+ * setupDataPipeline sets up the transform streams and begins parsing the packets
+ * @param stream the stream of bytes to treat as incoming packets
+ * @returns a teardown function which closes the stream
+ */
+export function setupDataPipeline(stream: ReadableStream<Uint8Array>): () => Promise<void> {
+	// setup
+	const transformStream = stream
 		.pipeThrough(new TextDecoderStream())
 		.pipeThrough(new TransformStream<string, string>(new LineBreakTransformer()))
-		.pipeThrough(new TransformStream<string, DataPacket>(new JSONTransformer()))
-		.getReader();
+		.pipeThrough(new TransformStream<string, DataPacket>(new JSONTransformer()));
 
+	const reader: ReadableStreamDefaultReader<DataPacket> = transformStream.getReader();
+
+	// start
 	readContinuous(reader);
-}
 
-export async function teardownDataPipeline(): Promise<void> {
-	await gStream.cancel();
+	// teardown
+	return async () => {
+		// aquire lock
+		await reader.cancel();
+		await reader.releaseLock();
+		await transformStream.cancel();
+	};
 }
  
 async function readContinuous(reader: ReadableStreamReader<DataPacket>) {

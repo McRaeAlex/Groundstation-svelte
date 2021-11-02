@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { browser } from '$app/env';
-
 	import { data } from '$lib/stores/data';
 	import Chart from 'chart.js/auto';
 	import { onMount } from 'svelte';
@@ -8,7 +6,7 @@
 	import deepMerge from '$lib/utils/deepMerge';
 
 	export let config = {};
-	export let func: (DataPacket) => Vec3; // TODO: figure out the correct name for the function
+	export let func: (DataPacket) => Vec3;
 
 	let canvas;
 

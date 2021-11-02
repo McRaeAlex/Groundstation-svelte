@@ -28,24 +28,28 @@ function randomNumber(min, max) {
 }
 
 class FakePacketStream {
+    interval: number;
     packetGenerator: Generator<DataPacket, DataPacket, DataPacket>;
+
     constructor() {
         this.packetGenerator = fakePacketGenerator();
     }
 
-    async start(controller: ReadableStreamController<ArrayBuffer>) {
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-            await new Promise(resolve => {
-                setTimeout(() => resolve(null), 100)
-            })
+    async start(controller: ReadableStreamController<Uint8Array>) {
+        this.interval = window.setInterval(() => {
             const { value } = this.packetGenerator.next();
             const entry = JSON.stringify(value) + '\r\n';
             const arraybuf = Uint8Array.from(entry, c => c.charCodeAt(0));
             controller.enqueue(arraybuf);
-        }
+        }, 100);
+    }
+
+    async cancel() {
+        window.clearInterval(this.interval);
     }
 }
 
-export const fakeSerialStream = new ReadableStream(new FakePacketStream());
+export function createFakeSerialStream(): ReadableStream<Uint8Array> {
+    return new ReadableStream(new FakePacketStream());
+}
 

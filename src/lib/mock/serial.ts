@@ -1,5 +1,7 @@
 // https://web.dev/streams/
 
+import { randomNumberInRange } from "$lib/utils/math";
+
 const startTime = Date.now();
 
 function* fakePacketGenerator(): Generator<DataPacket, DataPacket, DataPacket> {
@@ -8,24 +10,22 @@ function* fakePacketGenerator(): Generator<DataPacket, DataPacket, DataPacket> {
         const entry = {
             time: time,
             acceleration: {
-                x: randomNumber(-30000, 30000),
-                y: randomNumber(-30000, 30000),
-                z: randomNumber(-30000, 30000)
+                x: randomNumberInRange(-30000, 30000),
+                y: randomNumberInRange(-30000, 30000),
+                z: randomNumberInRange(-30000, 30000)
             },
             magnetometer: {
-                x: randomNumber(-100, 100),
-                y: randomNumber(-100, 100),
-                z: randomNumber(-100, 100)
+                x: randomNumberInRange(-100, 100),
+                y: randomNumberInRange(-100, 100),
+                z: randomNumberInRange(-100, 100)
             },
-            gyro: { x: randomNumber(-100, 100), y: randomNumber(-100, 100), z: randomNumber(-100, 100) }
+            gyro: { x: randomNumberInRange(-100, 100), y: randomNumberInRange(-100, 100), z: randomNumberInRange(-100, 100) },
+            channels: Array.from({length: 14}, () => randomNumberInRange(-3600, 3600)),
         };
         yield entry;
     }
 }
 
-function randomNumber(min, max) {
-    return Math.random() * (max - min) + min;
-}
 
 class FakePacketStream {
     interval: number;

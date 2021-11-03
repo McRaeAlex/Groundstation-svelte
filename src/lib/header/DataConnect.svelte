@@ -1,5 +1,6 @@
+<!-- TODO: Make the button look pretty -->
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { setupDataPipeline } from '$lib/serial';
 	import { toast } from '@zerodevx/svelte-toast';
 	import { createFakeSerialStream } from '$lib/mock/serial';
@@ -32,6 +33,10 @@
 			window.removeEventListener('click', handleClickOutside, false);
 		};
 	});
+
+	onDestroy(() => {
+		disconnectCurrentDevice();
+	})
 
 	function toggleDropDown() {
 		dropDownVisable = !dropDownVisable;

@@ -11,6 +11,7 @@ interface DataPacket {
 	gyro: Vec3;
 	acceleration: Vec3;
 	magnetometer: Vec3;
+	channels: Array<number>;
 }
 
 // TODO: remove hack

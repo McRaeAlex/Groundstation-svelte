@@ -6,8 +6,9 @@
 	import Header from '$lib/header/Header.svelte';
 	import XYZChart from '$lib/components/viz/charts/XYZChart.svelte';
 	import { accelConfig, magConfig, gyroConfig } from '$lib/components/viz/charts/chartConfigs';
-	import Map from '$lib/components/viz/map.svelte';
+	import Map from '$lib/components/viz/Map.svelte';
 	// import Orientation from '$lib/viz/orientation.svelte';
+	import ControllerChannels from '$lib/components/viz/ControllerChannels.svelte';
 
 	import Toast from '$lib/components/Toast.svelte';
 </script>
@@ -19,6 +20,7 @@
 		<XYZChart func={(elem) => elem.magnetometer} config={magConfig} />
 		<XYZChart func={(elem) => elem.gyro} config={gyroConfig} />
 		<Map />
+		<ControllerChannels />
 		<!-- <Orientation /> -->
 		<div class="chart" />
 		<div class="chart" />
